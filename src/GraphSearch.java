@@ -101,16 +101,15 @@ public class GraphSearch<S,A> {
         Util.PriorityQueue<Node<S, A>> frontier = new Util.PriorityQueue<>(
                 Comparator.comparingDouble(node -> node.fCost)
         );
-        ArrayList<Node<S, A>> expanded = new ArrayList<>();
+        HashSet<S> expanded = new HashSet<>();
 
         // Add start state as new Node
         frontier.push(
                 new Node(problem.getStartState(), new ArrayList(), 0.0, heuristic.value(problem.getStartState(), problem))
         );
 
-        Node<S, A> currentNode, successorNode;
-        List<A> actionsToCurrentNode;
-        double newFCost;
+        Node<S, A> currentNode;
+        List<A> actionsToCurrentNode, actionsToSuccessor;
 
         while (!frontier.isEmpty()) {
             currentNode = frontier.pop();
@@ -122,33 +121,29 @@ public class GraphSearch<S,A> {
                 );
             }
 
-            if (!expanded.contains(currentNode)) {
-                expanded.add(currentNode);
-                problem.expand(currentNode.getState());
+            if (!expanded.contains(currentNode.getState())) {
+                expanded.add(currentNode.getState());
 
-                for (A action: problem.getActions(currentNode.getState())) {
-                    actionsToCurrentNode = new ArrayList<>(currentNode.getActions());
-                    actionsToCurrentNode.add(action);
+                Collection<SuccessorInfo<S, A>> successors = problem.expand(currentNode.getState());
+                Iterator successorsIter = successors.iterator();
 
-                    successorNode = new Node<>(
-                            problem.getSuccessor(currentNode.getState(), action),
-                            actionsToCurrentNode,
-                            currentNode.getCost() + problem.getCost(currentNode.getState(), action),
+                actionsToCurrentNode = currentNode.getActions();
+                while (successorsIter.hasNext()) {
+                    SuccessorInfo<S, A> currentSuccessor = (SuccessorInfo<S, A>) successorsIter.next();
+
+                    actionsToSuccessor = new ArrayList<>(actionsToCurrentNode);
+                    actionsToSuccessor.add(currentSuccessor.action);
+
+                    Node<S, A> newNode = new Node<S, A>(
+                            currentSuccessor.nextState,
+                            actionsToSuccessor,
+                            currentNode.getCost()+currentSuccessor.cost,
                             heuristic.value(
-                                    problem.getSuccessor(currentNode.getState(), action), problem
+                                    currentSuccessor.nextState, problem
                             )
                     );
 
-                    boolean alreadyExpanded = false;
-                    for (Node<S, A> expNode : expanded) {
-                        if (expNode.getState().equals(successorNode.getState())) {
-                            alreadyExpanded = true;
-                        }
-                    }
-
-                    if (!alreadyExpanded) {
-                        frontier.push(successorNode);
-                    }
+                    frontier.push(newNode);
                 }
 
             }
@@ -158,15 +153,16 @@ public class GraphSearch<S,A> {
     }
 
     private static <S, A> Solution<S, A> graphSearch(SearchProblem<S, A> problem, Util.Frontier<Node<S,A>> frontier) {
-        ArrayList<Node<S, A>> expanded = new ArrayList<>();
+        // nodes already expanded
+        HashSet<S> expanded = new HashSet<>();
 
         // Add start state as new Node
         frontier.push(
                 new Node(problem.getStartState(), new ArrayList(), 0.0)
         );
 
-        Node<S, A> currentNode, successorNode;
-        List<A> actionsToCurrentNode;
+        Node<S, A> currentNode;
+        List<A> actionsToCurrentNode, actionsToSuccessor;
 
         while (!frontier.isEmpty()) {
             currentNode = frontier.pop();
@@ -178,35 +174,26 @@ public class GraphSearch<S,A> {
                 );
             }
 
-            if (!expanded.contains(currentNode)) {
-                expanded.add(currentNode);
-                problem.expand(currentNode.getState());
+            if (!expanded.contains(currentNode.getState())) {
+                expanded.add(currentNode.getState());
 
-                for (A action: problem.getActions(currentNode.getState())) {
-                    actionsToCurrentNode = new ArrayList<>(currentNode.getActions());
-                    actionsToCurrentNode.add(action);
+                Collection<SuccessorInfo<S, A>> successors = problem.expand(currentNode.getState());
+                Iterator successorsIter = successors.iterator();
 
-                    successorNode = new Node<>(
-                            problem.getSuccessor(currentNode.getState(), action),
-                            actionsToCurrentNode,
-                            currentNode.getCost() + problem.getCost(currentNode.getState(), action)
+                actionsToCurrentNode = currentNode.getActions();
+                while (successorsIter.hasNext()) {
+                    SuccessorInfo<S, A> currentSuccessor = (SuccessorInfo<S, A>) successorsIter.next();
+
+                    actionsToSuccessor = new ArrayList<>(actionsToCurrentNode);
+                    actionsToSuccessor.add(currentSuccessor.action);
+
+                    Node<S, A> newNode = new Node<S, A>(
+                            currentSuccessor.nextState,
+                            actionsToSuccessor,
+                            currentNode.getCost()+currentSuccessor.cost
                     );
 
-                    // I might rework this later (using equals or compare to), but currently
-                    // contains() will not work because a node with West->East is counted as
-                    // the same as the start node even thought both of their states are (5,5),
-                    // this works around that to make sure the same state space doesn't get
-                    // expanded twice
-                    boolean alreadyExpanded = false;
-                    for (Node<S, A> expNode : expanded) {
-                        if (expNode.getState().equals(successorNode.getState())) {
-                            alreadyExpanded = true;
-                        }
-                    }
-
-                    if (!alreadyExpanded) {
-                        frontier.push(successorNode);
-                    }
+                    frontier.push(newNode);
                 }
 
             }

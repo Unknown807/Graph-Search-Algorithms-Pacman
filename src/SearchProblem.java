@@ -182,8 +182,9 @@ class PacmanCornersProblem extends SearchProblem<PacmanCornersSearchState, Pacma
 
     private final Maze maze;
     private final Coordinate startLocation;
-
     private final List<Coordinate> cornersLocations;
+
+//    private int allCornersFound = 0;
 
     public PacmanCornersProblem(Maze maze) {
         this.maze = maze;
@@ -201,40 +202,77 @@ class PacmanCornersProblem extends SearchProblem<PacmanCornersSearchState, Pacma
 
     @Override
     public PacmanCornersSearchState getStartState() {
-        return new PacmanCornersSearchState(this.startLocation);
+        return new PacmanCornersSearchState(this.startLocation, this.cornersLocations);
     }
 
     @Override
     public boolean isGoalState(PacmanCornersSearchState state) {
-        //TODO: YOUR CODE HERE
-        throw new RuntimeException("Not Implemented");
+        return state.cornerStates.isEmpty();
+        //return allCornersFound == 4;
     }
 
     @Override
     public Collection<SuccessorInfo<PacmanCornersSearchState, PacmanAction>> expand(PacmanCornersSearchState state) {
-        //TODO: YOUR CODE HERE
-        throw new RuntimeException("Not Implemented");
+//        if (isACorner(state)) {
+//            allCornersFound++;
+//        }
+
+        Collection<SuccessorInfo<PacmanCornersSearchState, PacmanAction>> successors = new ArrayList<>();
+        for (PacmanAction action : getActions(state)) {
+            successors.add(new SuccessorInfo<>(getSuccessor(state, action), action, getCost(state, action)));
+        }
+
+        doBookKeeping(state);
+
+        return successors;
+
     }
 
     @Override
     public List<PacmanAction> getActions(PacmanCornersSearchState state) {
-        //TODO: YOUR CODE HERE
-        throw new RuntimeException("Not Implemented");
+        return maze.getPacmanActions(state.pacmanLocation);
     }
 
     @Override
     public PacmanCornersSearchState getSuccessor(PacmanCornersSearchState state, PacmanAction action) {
-        //TODO: YOUR CODE HERE
-        throw new RuntimeException("Not Implemented");
+        if (! getActions(state).contains(action)) {
+            throw new RuntimeException("Invalid arguments. Action" + action + "is not valid from state" + state);
+        }
+
+        Coordinate nextLocation = state.pacmanLocation.add(action.toVector());
+        return new PacmanCornersSearchState(nextLocation,
+                this.getNextCornerStates(nextLocation, state.cornerStates));
     }
 
     @Override
     public double getCost(PacmanCornersSearchState state, PacmanAction action) {
-        //TODO: YOUR CODE HERE
-        throw new RuntimeException("Not Implemented");
+        if (! getActions(state).contains(action)) {
+            // action leads into the wall
+            return 999999;
+        }
+        return 1;
     }
 
-    //TODO: YOU CAN ADD YOUR METHODS HERE
+    private List<Coordinate> getNextCornerStates(Coordinate position, List<Coordinate> cornerStates) {
+        List<Coordinate> nextCornerStates = cornerStates;
+        if (cornerStates.contains(position)) {
+            nextCornerStates = new ArrayList<>(cornerStates);
+            nextCornerStates.remove(position);
+        }
+        return nextCornerStates;
+    }
+
+//    private boolean isACorner(PacmanCornersSearchState state) {
+//        if (
+//                cornersLocations.get(0).equals(state) ||
+//                cornersLocations.get(1).equals(state) ||
+//                cornersLocations.get(2).equals(state) ||
+//                cornersLocations.get(3).equals(state)
+//        ) {
+//            return true;
+//        }
+//        return false;
+//    }
 }
 
 /**
@@ -252,7 +290,6 @@ class PacmanFoodSearchProblem extends SearchProblem<PacmanFoodSearchState, Pacma
     public PacmanFoodSearchProblem(Maze maze) {
         this.maze = maze;
         this.startLocation = maze.getPacmanLocation();
-
         this.foodCoordinates = maze.getFoodCoordinates();
     }
 
@@ -360,40 +397,30 @@ class PacmanPositionSearchState implements SearchState {
  */
 class PacmanCornersSearchState implements SearchState {
     Coordinate pacmanLocation;
+    List<Coordinate> cornerStates;
 
-    public PacmanCornersSearchState(Coordinate pacmanLocation) {
+    public PacmanCornersSearchState(Coordinate pacmanLocation, List<Coordinate> cornerStates) {
         this.pacmanLocation = pacmanLocation;
+        this.cornerStates = cornerStates;
     }
 
-    /**
-     * This method is useful for debugging
-     */
     @Override
     public String toString() {
-        //TODO: YOUR CODE HERE
         throw new RuntimeException("Not Implemented");
     }
 
-    /**
-     * You need to implement this method properly for correct functioning
-     * of sets.
-     */
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof PacmanCornersSearchState)) {
+        if (!(o instanceof PacmanCornersSearchState))
             return false;
-        }
 
-        return pacmanLocation.equals(((PacmanCornersSearchState) o).pacmanLocation);
+        return pacmanLocation.equals(((PacmanCornersSearchState) o).pacmanLocation) &&
+                cornerStates.equals(((PacmanCornersSearchState) o).cornerStates);
     }
 
-    /**
-     * You need to implement this method properly for correct functioning
-     * of sets.
-     */
     @Override
     public int hashCode() {
-        return pacmanLocation.hashCode();
+        return 31 * pacmanLocation.hashCode() + cornerStates.hashCode();
     }
 }
 
@@ -563,8 +590,41 @@ class CornersHeuristic<S,A> implements SearchHeuristic<S,A> {
 
         if (problem instanceof PacmanCornersProblem && state instanceof PacmanCornersSearchState) {
 
-            //TODO: YOUR CODE HERE
-            throw new RuntimeException("Not Implemented");
+            // find the corners that are left to visit
+            List<Coordinate> cornersLeft = new ArrayList<>(((PacmanCornersSearchState) state).cornerStates);
+
+            double total = 0.0;
+            double heuristic = 0.0;
+
+            Coordinate currentCoord = ((PacmanCornersSearchState) state).pacmanLocation;
+
+            Coordinate minCorner;
+            double minDistance;
+            double nDistance;
+
+            while (!cornersLeft.isEmpty()) {
+
+                // find min corner
+                minCorner = cornersLeft.get(0);
+                minDistance = currentCoord.manhattanDistance(minCorner);
+                for (int i=1; i<cornersLeft.size(); i++) {
+                    nDistance = currentCoord.manhattanDistance(cornersLeft.get(i));
+                    if (nDistance < minDistance) {
+                        heuristic = nDistance;
+                        minDistance = nDistance;
+                        minCorner = cornersLeft.get(i);
+                    }
+                }
+
+                // currentCoord=minCorner to work out corner to corner shortest distance
+                // and add heuristic to total
+                currentCoord = minCorner;
+                total += heuristic;
+
+                cornersLeft.remove(minCorner);
+            }
+
+            return total;
         }
 
         return 0.0;
