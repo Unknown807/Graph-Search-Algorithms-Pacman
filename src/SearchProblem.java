@@ -594,30 +594,27 @@ class CornersHeuristic<S,A> implements SearchHeuristic<S,A> {
             List<Coordinate> cornersLeft = new ArrayList<>(((PacmanCornersSearchState) state).cornerStates);
 
             double total = 0.0;
-            double heuristic = 0.0;
+            double heuristic, nDistance;
 
             Coordinate currentCoord = ((PacmanCornersSearchState) state).pacmanLocation;
-
             Coordinate minCorner;
-            double minDistance;
-            double nDistance;
 
             while (!cornersLeft.isEmpty()) {
 
                 // find min corner
                 minCorner = cornersLeft.get(0);
-                minDistance = currentCoord.manhattanDistance(minCorner);
+                heuristic = currentCoord.manhattanDistance(minCorner); // the minimum distance
                 for (int i=1; i<cornersLeft.size(); i++) {
                     nDistance = currentCoord.manhattanDistance(cornersLeft.get(i));
-                    if (nDistance < minDistance) {
+                    if (nDistance < heuristic) {
                         heuristic = nDistance;
-                        minDistance = nDistance;
                         minCorner = cornersLeft.get(i);
                     }
                 }
 
                 // currentCoord=minCorner to work out corner to corner shortest distance
                 // and add heuristic to total
+
                 currentCoord = minCorner;
                 total += heuristic;
 
