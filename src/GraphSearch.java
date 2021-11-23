@@ -99,57 +99,10 @@ public class GraphSearch<S,A> {
 
     private static <S, A> Solution<S, A> aStarSearch(SearchProblem<S, A> problem, SearchHeuristic<S, A> heuristic) {
         Util.PriorityQueue<Node<S, A>> frontier = new Util.PriorityQueue<>(
-                Comparator.comparingDouble(node -> node.fCost)
-        );
-        HashSet<S> expanded = new HashSet<>();
-
-        // Add start state as new Node
-        frontier.push(
-                new Node(problem.getStartState(), new ArrayList(), 0.0, heuristic.value(problem.getStartState(), problem))
+                Comparator.comparingDouble(node -> node.cost + heuristic.value(node.getState(), problem))
         );
 
-        Node<S, A> currentNode;
-        List<A> actionsToCurrentNode, actionsToSuccessor;
-
-        while (!frontier.isEmpty()) {
-            currentNode = frontier.pop();
-            if (problem.isGoalState(currentNode.getState())) {
-                return new Solution<>(
-                        currentNode.getState(),
-                        currentNode.getActions(),
-                        currentNode.getCost()
-                );
-            }
-
-            if (!expanded.contains(currentNode.getState())) {
-                expanded.add(currentNode.getState());
-
-                Collection<SuccessorInfo<S, A>> successors = problem.expand(currentNode.getState());
-                Iterator successorsIter = successors.iterator();
-
-                actionsToCurrentNode = currentNode.getActions();
-                while (successorsIter.hasNext()) {
-                    SuccessorInfo<S, A> currentSuccessor = (SuccessorInfo<S, A>) successorsIter.next();
-
-                    actionsToSuccessor = new ArrayList<>(actionsToCurrentNode);
-                    actionsToSuccessor.add(currentSuccessor.action);
-
-                    Node<S, A> newNode = new Node<S, A>(
-                            currentSuccessor.nextState,
-                            actionsToSuccessor,
-                            currentNode.getCost()+currentSuccessor.cost,
-                            heuristic.value(
-                                    currentSuccessor.nextState, problem
-                            )
-                    );
-
-                    frontier.push(newNode);
-                }
-
-            }
-        }
-
-        return null;
+        return graphSearch(problem, frontier);
     }
 
     private static <S, A> Solution<S, A> graphSearch(SearchProblem<S, A> problem, Util.Frontier<Node<S,A>> frontier) {
@@ -177,20 +130,14 @@ public class GraphSearch<S,A> {
             if (!expanded.contains(currentNode.getState())) {
                 expanded.add(currentNode.getState());
 
-                Collection<SuccessorInfo<S, A>> successors = problem.expand(currentNode.getState());
-                Iterator successorsIter = successors.iterator();
-
-                actionsToCurrentNode = currentNode.getActions();
-                while (successorsIter.hasNext()) {
-                    SuccessorInfo<S, A> currentSuccessor = (SuccessorInfo<S, A>) successorsIter.next();
-
-                    actionsToSuccessor = new ArrayList<>(actionsToCurrentNode);
-                    actionsToSuccessor.add(currentSuccessor.action);
+                for (SuccessorInfo<S, A> successor : problem.expand(currentNode.getState())) {
+                    actionsToSuccessor = new ArrayList<>(currentNode.getActions());
+                    actionsToSuccessor.add(successor.action);
 
                     Node<S, A> newNode = new Node<S, A>(
-                            currentSuccessor.nextState,
+                            successor.nextState,
                             actionsToSuccessor,
-                            currentNode.getCost()+currentSuccessor.cost
+                            currentNode.getCost()+successor.cost
                     );
 
                     frontier.push(newNode);
