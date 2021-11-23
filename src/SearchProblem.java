@@ -644,8 +644,27 @@ class FoodHeuristic<S,A> implements SearchHeuristic<S,A> {
 
         if (problem instanceof PacmanFoodSearchProblem && state instanceof PacmanFoodSearchState) {
 
-            //TODO: YOUR CODE HERE
-            throw new RuntimeException("Not Implemented");
+            List<Double> positionDistances = new ArrayList<>();
+
+            List<Double> foodDistances = new ArrayList<>();
+            // collections.max will cause exception if there are no food coordinates, so 0 is default max
+            foodDistances.add(0.0);
+
+            // Calculating shortest path between pacman and the next food coordinate, followed by the distances
+            // between that food coordinate and all other food coordinates
+            for (Coordinate food: ((PacmanFoodSearchState) state).foodCoordinates) {
+                positionDistances.add(((PacmanFoodSearchState) state).pacmanLocation.manhattanDistance(food));
+                for (Coordinate otherFood: ((PacmanFoodSearchState) state).foodCoordinates) {
+                    foodDistances.add(food.manhattanDistance(otherFood));
+                }
+            }
+
+            if (positionDistances.size() > 0) {
+                return Collections.min(positionDistances) + Collections.max(foodDistances);
+            } else {
+                return Collections.max(foodDistances);
+            }
+
         }
 
         return 0.0;
