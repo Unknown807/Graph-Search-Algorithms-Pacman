@@ -202,7 +202,8 @@ class PacmanCornersProblem extends SearchProblem<PacmanCornersSearchState, Pacma
 
     @Override
     public PacmanCornersSearchState getStartState() {
-        return new PacmanCornersSearchState(this.startLocation, this.cornersLocations);
+        // Also accounts for starting at a corner
+        return new PacmanCornersSearchState(this.startLocation, this.getNextCornerStates(this.startLocation, cornersLocations));
     }
 
     @Override
@@ -213,10 +214,6 @@ class PacmanCornersProblem extends SearchProblem<PacmanCornersSearchState, Pacma
 
     @Override
     public Collection<SuccessorInfo<PacmanCornersSearchState, PacmanAction>> expand(PacmanCornersSearchState state) {
-//        if (isACorner(state)) {
-//            allCornersFound++;
-//        }
-
         Collection<SuccessorInfo<PacmanCornersSearchState, PacmanAction>> successors = new ArrayList<>();
         for (PacmanAction action : getActions(state)) {
             successors.add(new SuccessorInfo<>(getSuccessor(state, action), action, getCost(state, action)));
@@ -599,6 +596,10 @@ class CornersHeuristic<S,A> implements SearchHeuristic<S,A> {
             Coordinate currentCoord = ((PacmanCornersSearchState) state).pacmanLocation;
             Coordinate minCorner;
 
+//            if (cornersLeft.contains(currentCoord)) {
+//                return 0.0;
+//            }
+
             while (!cornersLeft.isEmpty()) {
 
                 // find min corner
@@ -620,6 +621,7 @@ class CornersHeuristic<S,A> implements SearchHeuristic<S,A> {
 
                 cornersLeft.remove(minCorner);
             }
+
 
             return total;
         }

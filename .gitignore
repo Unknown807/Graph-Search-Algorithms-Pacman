@@ -26,3 +26,5 @@ hs_err_pid*
 .idea/
 out/
 AIAssign2.iml
+src/Autograder.java
+mazes/autograder.lay
