@@ -4,7 +4,7 @@ An assignment done as part of my 'Introduction to A.I' module. This implements j
 
 # How it Looks
 
-Running a breadth first search for a food dot, followed by running trickySearch for the shortest path to all food dots:
+Running a depth first search for a food dot, followed by running trickySearch for the shortest path to all food dots:
 
 <div align="center">
   
